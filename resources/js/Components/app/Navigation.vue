@@ -9,18 +9,18 @@ const menuList = [
         name: "My Files",
         route: "myFiles",
     },
-    // {
-    //     name: "Shared with me",
-    //     route: "file.sharedWithMe",
-    // },
-    // {
-    //     name: "Shared by me",
-    //     route: "file.sharedByMe",
-    // },
-    // {
-    //     name: "Trash",
-    //     route: "trash",
-    // },
+    {
+        name: "Shared with me",
+        route: "file.sharedWithMe",
+    },
+    {
+        name: "Shared by me",
+        route: "file.sharedByMe",
+    },
+    {
+        name: "Trash",
+        route: "trash",
+    },
 ];
 </script>
 
@@ -47,6 +47,8 @@ const menuList = [
                     :class="{
                         'text-blue-500': $page.props.route_name === menu.route,
                     }"
+                    :active="($page.url === '/my-files' && menu.route === 'myFiles') ||
+                             ($page.url === '/trash' && menu.route === 'trash')"
                 >
                     {{ menu.name }}
                 </NavLink>

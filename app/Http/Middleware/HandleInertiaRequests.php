@@ -35,6 +35,9 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            // NOTE: 추가됨
+            // 프론트엔드에서 fetch 사용 시 csrf를 방지하기 위해 token을 제공합니다.
+            '_csrfToken' => csrf_token(),
             'ziggy' => fn () => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),

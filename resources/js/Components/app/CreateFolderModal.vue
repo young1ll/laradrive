@@ -5,8 +5,9 @@ import InputLabel from "@/Components/InputLabel.vue";
 import InputError from "@/Components/InputError.vue";
 import PrimaryButton from "@/Components/PrimaryButton.vue";
 import SecondaryButton from "@/Components/SecondaryButton.vue";
-import { useForm } from "@inertiajs/vue3";
+import { useForm, usePage } from "@inertiajs/vue3";
 import { nextTick, ref } from "vue";
+import { showSuccessNotification } from "@/event-bus";
 
 const folderNameInput = ref(null);
 const { modelValue } = defineProps({
@@ -16,14 +17,19 @@ const emit = defineEmits(["update:modelValue"]);
 
 const form = useForm({
     name: "",
+    parent_id: null,
 });
+
+const page = usePage();
 
 function onShow() {
     nextTick(() => folderNameInput.value.focus()); // modal 내 show slot으로 전파?
 }
 
 function createFolder() {
-    // console.log("create folder");
+    form.parent_id = page.props.folder.id;
+    const name = form.name;
+
     form.post(route("folder.create"), {
         preserveScroll: true,
         onSuccess: () => {
@@ -31,6 +37,8 @@ function createFolder() {
             form.reset();
 
             // 성공 알림 표시
+            showSuccessNotification(`The folder "${name}" has been created.`);
+            form.reset();
         },
         onError: () => folderNameInput.value.focus(), //error는 컴포넌트로 표시
     });
@@ -60,7 +68,8 @@ function closeModal() {
 
                 <TextInput
                     type="text"
-                    ref="folderName"
+                    id="folderName"
+                    ref="folderNameInput"
                     v-model="form.name"
                     class="block w-full mt-1"
                     :class="
@@ -88,3 +97,4 @@ function closeModal() {
 </template>
 
 <style lang="scss" scoped></style>
+, usePage, usePage

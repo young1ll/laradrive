@@ -3,6 +3,19 @@ import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/vue";
 import { ChevronDownIcon } from "@heroicons/vue/20/solid";
 
 import ResponsiveNavLink from "@/Components/ResponsiveNavLink.vue";
+
+const Menus = [
+    {
+        name: "Profile",
+        route: "profile.edit",
+        method: "get",
+    },
+    {
+        name: "Logout",
+        method: "post",
+        route: "logout",
+    },
+];
 </script>
 
 <template>
@@ -31,30 +44,16 @@ import ResponsiveNavLink from "@/Components/ResponsiveNavLink.vue";
                 class="absolute right-0 w-56 mt-2 origin-top-right bg-white divide-y divide-gray-100 rounded-md shadow-lg ring-1 ring-black/5 focus:outline-none"
             >
                 <div class="px-1 py-1">
-                    <MenuItem v-slot="{ active }">
-                        <ResponsiveNavLink
-                            :href="route('profile.edit')"
-                            :class="[
-                                active
-                                    ? 'bg-gray-100 text-gray-900'
-                                    : 'text-gray-700',
-                                'block px-4 py-2 text-sm',
-                            ]"
-                        >
-                            Profile
-                        </ResponsiveNavLink>
-                    </MenuItem>
-                    <MenuItem v-slot="{ active }">
-                        <ResponsiveNavLink
-                            :href="route('profile.edit')"
-                            :class="[
-                                active
-                                    ? 'bg-gray-100 text-gray-900'
-                                    : 'text-gray-700',
-                                'block px-4 py-2 text-sm',
-                            ]"
-                        >
-                            Logout
+                    <MenuItem
+                        v-for="menu in Menus"
+                        :key="menu.name"
+                        v-slot="{ active }"
+                    >
+                        <ResponsiveNavLink :href="route(menu.route)"
+                                           :method="menu.method"
+                                           :as="menu.method === 'get' ? 'a' : 'button'"
+                                           :class="[active ? 'bg-gray-100 text-gray-900' : 'text-gray-700', 'block px-4 py-2 text-sm']">
+                            {{ menu.name }}
                         </ResponsiveNavLink>
                     </MenuItem>
                 </div>

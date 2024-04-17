@@ -3,12 +3,14 @@
 namespace App\Models;
 
 use App\Traits\HasCreatorAndUpdater;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Kalnoy\Nestedset\NodeTrait;
 
@@ -28,6 +30,12 @@ class File extends Model
         return $this->belongsTo(File::class, 'parent_id');
     }
 
+    public function starred()
+    {
+        return $this->hasOne(StarredFile::class, 'file_id', 'id')
+            ->where('user_id', Auth::id());
+    }
+
     public function owner(): Attribute
     {
         return Attribute::make(
@@ -45,17 +53,78 @@ class File extends Model
     {
         return $this->parent_id === null;
     }
+    public function get_file_size()
+    {
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+
+        $power = $this->size > 0 ? floor(log($this->size, 1024)) : 0;
+        return number_format($this->size / pow(1024, $power), 2, '.', ',') . ' ' . $units[$power];
+    }
 
     protected static function boot()
     {
         parent::boot();
 
         static::creating(function ($model) {
-            if(!$model->parent) {
+            if (!$model->parent) {
                 return;
             }
 
-            $model->path = (!$model->parent->isRoot() ? $model->parent->path . '/' : '' ) . Str::slug($model->name);
+            $model->path = (!$model->parent->isRoot() ? $model->parent->path . '/' : '') . Str::slug($model->name);
         });
+
+        // file 모델 삭제 시 관련된 storage source 삭제
+        // -> soft delete가 적용되어, deleted_at 컬럼이 존재하므로, 해당 데이터의 삭제로 관련된 리소스가 삭제되면 안됨.
+        // static::deleted(function (File $model) {
+        //     if (!$model->is_folder) {
+        //         Storage::delete($model->storage_path);
+        //     }
+        // });
+    }
+
+    /**
+     * delete()를 사용하게 되면 모든 자식 요소들이 deleted_at에 날짜가 입력되어 soft delete 된다.
+     * 오직 부모 요소만 삭제 표시해도, 모든 자식 요소들은 삭제된 것과 같이 표시할 수 있다.
+     */
+    public function moveToTrash()
+    {
+        $this->deleted_at = Carbon::now();
+        return $this->save();
+    }
+
+    public function deleteForever()
+    {
+        $this->deleteFilesFromStorage([$this]);
+        $this->forceDelete();
+    }
+
+    public function deleteFilesFromStorage($files)
+    {
+        foreach ($files as $file) {
+            if ($file->is_folder) {
+                $this->deleteFilesFromStorage($file->children);
+            } else {
+                Storage::delete($file->storage_path);
+            }
+        }
+    }
+
+    public static function getSharedWithMe()
+    {
+        return File::query()
+            ->select('files.*')
+            ->join('file_shares', 'file_shares.file.id', 'files.id')
+            ->where('file_shares.user_id', Auth::id())
+            ->orderBy('files_shares.created_at', 'desc')
+            ->orderBy('files.id', 'desc');
+    }
+    public static function getSharedByMe()
+    {
+        return File::query()
+            ->select('files.*')
+            ->join('file_shares', 'file_shares.file.id', 'files.id')
+            ->where('files.created_by', Auth::id())
+            ->orderBy('files_shares.created_at', 'desc')
+            ->orderBy('files.id', 'desc');
     }
 }
